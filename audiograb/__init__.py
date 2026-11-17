@@ -1,0 +1,3 @@
+"""AudioGrab package."""
+__version__ = "1.0.0"
+__all__ = ["downloader", "tagger", "utils", "cli"]

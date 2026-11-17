@@ -1,0 +1,104 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioGrab | Simple & Advanced</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="card" id="mainCard">
+            <h1>Audio<span>Grab</span></h1>
+            <p class="subtitle">Paste a YouTube URL to extract high-quality MP3 with metadata.</p>
+            
+            <form id="downloadForm">
+                <div class="input-group">
+                    <input type="url" id="urlInput" name="url" placeholder="https://youtube.com/watch?v=..." required>
+                    <button type="submit" id="submitBtn">Grab Audio</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="card hidden" id="loadingCard">
+            <div class="spinner"></div>
+            <h2 id="loadingText">Downloading & Converting...</h2>
+            <p class="subtitle">This usually takes 5-15 seconds depending on the video length.</p>
+        </div>
+
+        <div class="card hidden" id="successCard">
+            <div class="success-icon">🎵</div>
+            <h2 id="successTitle">Song Title</h2>
+            <p class="subtitle" id="successArtist">Artist Name</p>
+            
+            <audio id="audioPlayer" controls></audio>
+
+            <a href="#" id="downloadLink" class="btn-download" download>Save to Device</a>
+            <button onclick="resetApp()" class="btn-reset">Download Another</button>
+        </div>
+
+        <div class="card hidden" id="errorCard">
+            <div class="error-icon">⚠️</div>
+            <h2>Download Failed</h2>
+            <p class="subtitle" id="errorText" style="color: #ef4444; word-wrap: break-word;"></p>
+            <button onclick="resetApp()" class="btn-reset" style="margin-top: 20px;">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        const form = document.getElementById('downloadForm');
+        const mainCard = document.getElementById('mainCard');
+        const loadingCard = document.getElementById('loadingCard');
+        const successCard = document.getElementById('successCard');
+        const errorCard = document.getElementById('errorCard');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = document.getElementById('urlInput').value;
+
+            mainCard.classList.add('hidden');
+            loadingCard.classList.remove('hidden');
+
+            const formData = new FormData();
+            formData.append('url', url);
+
+            try {
+                const response = await fetch('/download', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+
+                if (response.ok) {
+                    loadingCard.classList.add('hidden');
+                    successCard.classList.remove('hidden');
+                    
+                    document.getElementById('successTitle').innerText = data.title;
+                    document.getElementById('successArtist').innerText = data.artist;
+                    
+                    const fileUrl = `/downloads/${encodeURIComponent(data.filename)}`;
+                    document.getElementById('audioPlayer').src = fileUrl;
+                    document.getElementById('downloadLink').href = fileUrl;
+                    document.getElementById('downloadLink').setAttribute('download', data.filename);
+                } else {
+                    throw new Error(data.error || "Server error occurred");
+                }
+            } catch (error) {
+                loadingCard.classList.add('hidden');
+                errorCard.classList.remove('hidden');
+                document.getElementById('errorText').innerText = error.message;
+            }
+        });
+
+        function resetApp() {
+            successCard.classList.add('hidden');
+            errorCard.classList.add('hidden');
+            mainCard.classList.remove('hidden');
+            document.getElementById('urlInput').value = '';
+            document.getElementById('audioPlayer').src = '';
+        }
+    </script>
+</body>
+</html>
