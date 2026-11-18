@@ -67,7 +67,7 @@ def handle_download():
             "no_warnings": True,
             "ffmpeg_location": FFMPEG_PATH,
             "cookiefile": "cookies.txt",
-            "extractor_args": {"youtube": {"player_client": ["web", "tv"]}},
+            # Removed extractor_args to fix format availability
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": codec,
