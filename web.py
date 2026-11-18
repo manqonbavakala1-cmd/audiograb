@@ -60,14 +60,14 @@ def handle_download():
 
     try:
         opts = {
-            "format": "bestaudio/best",
+            # FIX: Changed to bestaudio*/best to force fallback on cloud servers
+            "format": "bestaudio*/best", 
             "outtmpl": str(DOWNLOADS_DIR / "%(title)s.%(ext)s"),
             "writethumbnail": True,
             "quiet": True,
             "no_warnings": True,
             "ffmpeg_location": FFMPEG_PATH,
             "cookiefile": "cookies.txt",
-            # Removed extractor_args to fix format availability
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": codec,
