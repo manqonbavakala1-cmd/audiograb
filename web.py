@@ -1,27 +1,62 @@
 from flask import Flask, render_template, request, send_from_directory, jsonify
 import os
 import shutil
+import time
 import yt_dlp
 from pathlib import Path
 from audiograb.tagger import tag
 from audiograb.utils import sanitize_filename, ensure_dir
 
+# Rate Limiter
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
 app = Flask(__name__)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://",
+)
+
 DOWNLOADS_DIR = Path(__file__).parent / "downloads"
 ensure_dir(DOWNLOADS_DIR)
-
-# Find FFmpeg on both Windows and Linux
 FFMPEG_PATH = shutil.which("ffmpeg") or "/usr/bin/ffmpeg"
+
+# --- AUTO CLEANUP FUNCTION ---
+def cleanup_old_files():
+    """Deletes files older than 15 minutes to save space."""
+    now = time.time()
+    for f in DOWNLOADS_DIR.glob("*"):
+        if f.is_file() and now - f.stat().st_mtime > 900: # 900 seconds = 15 mins
+            try:
+                f.unlink()
+            except:
+                pass
 
 @app.route('/')
 def index():
+    cleanup_old_files() # Run cleanup every time the page loads
     return render_template('index.html')
 
 @app.route('/download', methods=['POST'])
+@limiter.limit("5 per minute") # Prevents bots from spamming
 def handle_download():
     url = request.form.get('url')
+    format_choice = request.form.get('format', 'mp3_320') # Default to 320
+
     if not url:
         return jsonify({"error": "No URL provided"}), 400
+
+    # Map the dropdown choices to yt-dlp settings
+    if format_choice == 'mp3_128':
+        codec, quality = "mp3", "128"
+    elif format_choice == 'm4a':
+        codec, quality = "m4a", "192"
+    elif format_choice == 'wav':
+        codec, quality = "wav", "0"
+    else:
+        codec, quality = "mp3", "320"
 
     try:
         opts = {
@@ -31,14 +66,12 @@ def handle_download():
             "quiet": True,
             "no_warnings": True,
             "ffmpeg_location": FFMPEG_PATH,
-            # 1. Add cookies back in (ensure cookies.txt exists in the root)
             "cookiefile": "cookies.txt",
-            # 2. Force a specific YouTube client to bypass player errors
             "extractor_args": {"youtube": {"player_client": ["web", "tv"]}},
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
-                "preferredcodec": "mp3",
-                "preferredquality": "320",
+                "preferredcodec": codec,
+                "preferredquality": quality,
             }],
         }
 
@@ -48,12 +81,12 @@ def handle_download():
             artist = info.get("uploader", "Unknown Artist")
             
             base = sanitize_filename(title)
-            mp3_path = DOWNLOADS_DIR / f"{base}.mp3"
+            media_path = DOWNLOADS_DIR / f"{base}.{codec}"
             
-            if not mp3_path.exists():
-                candidates = list(DOWNLOADS_DIR.glob("*.mp3"))
+            if not media_path.exists():
+                candidates = list(DOWNLOADS_DIR.glob(f"*.{codec}"))
                 if candidates:
-                    mp3_path = max(candidates, key=lambda p: p.stat().st_mtime)
+                    media_path = max(candidates, key=lambda p: p.stat().st_mtime)
 
             thumb_path = None
             for ext in (".jpg", ".webp", ".png"):
@@ -62,16 +95,17 @@ def handle_download():
                     thumb_path = cand
                     break
 
-        try:
-            tag(str(mp3_path), title, artist, str(thumb_path) if thumb_path else None)
-        except Exception as tag_error:
-            print(f"Tagging failed: {tag_error}")
+        if codec in ["mp3", "m4a"]:
+            try:
+                tag(str(media_path), title, artist, str(thumb_path) if thumb_path else None)
+            except Exception as tag_error:
+                print(f"Tagging failed: {tag_error}")
         
         return jsonify({
             "success": True,
             "title": title,
             "artist": artist,
-            "filename": mp3_path.name
+            "filename": media_path.name
         })
 
     except Exception as e:
