@@ -1,14 +1,254 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AudioGrab | Simple & Advanced</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>AudioGrab | Premium Audio Downloader</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --card-bg: rgba(24, 24, 27, 0.6);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #a1a1aa;
+            --accent: #8b5cf6;
+            --accent-hover: #7c3aed;
+            --success: #10b981;
+            --danger: #ef4444;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Glowing Background Effect */
+        body::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, rgba(9, 9, 11, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            padding: 20px;
+            z-index: 1;
+        }
+
+        /* Glassmorphism Card */
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.98); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.05em;
+            margin-bottom: 12px;
+        }
+
+        h1 span {
+            background: linear-gradient(135deg, #a78bfa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        h2 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            word-wrap: break-word;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 30px;
+        }
+
+        /* Input & Button */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 16px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input[type="url"]:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        button[type="submit"] {
+            padding: 16px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button[type="submit"]:hover {
+            background: var(--accent-hover);
+        }
+
+        button[type="submit"]:active {
+            transform: scale(0.98);
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(139, 92, 246, 0.2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Success Elements */
+        .success-icon {
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+            filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.5));
+        }
+
+        /* Custom Audio Player */
+        audio {
+            width: 100%;
+            margin-bottom: 24px;
+            border-radius: 12px;
+            outline: none;
+        }
+        
+        /* Style the default webkit audio player */
+        audio::-webkit-media-controls-panel {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        audio::-webkit-media-controls-play-button {
+            background-color: var(--accent);
+            border-radius: 50%;
+        }
+
+        .btn-download {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            background: var(--success);
+            color: white;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        .btn-download:hover {
+            background: #059669;
+        }
+
+        .btn-download:active {
+            transform: scale(0.98);
+        }
+
+        .btn-reset {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            border-radius: 12px;
+            width: 100%;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+
+        /* Error Elements */
+        .error-icon {
+            font-size: 3.5rem;
+            margin-bottom: 16px;
+        }
+
+        #errorText {
+            color: var(--danger);
+            font-size: 0.9rem;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            word-wrap: break-word;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
+        <!-- Main Card -->
         <div class="card" id="mainCard">
             <h1>Audio<span>Grab</span></h1>
             <p class="subtitle">Paste a YouTube URL to extract high-quality MP3 with metadata.</p>
@@ -21,12 +261,14 @@
             </form>
         </div>
 
+        <!-- Loading State -->
         <div class="card hidden" id="loadingCard">
             <div class="spinner"></div>
             <h2 id="loadingText">Downloading & Converting...</h2>
             <p class="subtitle">This usually takes 5-15 seconds depending on the video length.</p>
         </div>
 
+        <!-- Success State -->
         <div class="card hidden" id="successCard">
             <div class="success-icon">🎵</div>
             <h2 id="successTitle">Song Title</h2>
@@ -38,11 +280,12 @@
             <button onclick="resetApp()" class="btn-reset">Download Another</button>
         </div>
 
+        <!-- Error State -->
         <div class="card hidden" id="errorCard">
             <div class="error-icon">⚠️</div>
             <h2>Download Failed</h2>
-            <p class="subtitle" id="errorText" style="color: #ef4444; word-wrap: break-word;"></p>
-            <button onclick="resetApp()" class="btn-reset" style="margin-top: 20px;">Try Again</button>
+            <p class="subtitle" id="errorText"></p>
+            <button onclick="resetApp()" class="btn-reset">Try Again</button>
         </div>
     </div>
 
@@ -57,6 +300,7 @@
             e.preventDefault();
             const url = document.getElementById('urlInput').value;
 
+            // Switch to Loading State
             mainCard.classList.add('hidden');
             loadingCard.classList.remove('hidden');
 
@@ -72,6 +316,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    // Switch to Success State
                     loadingCard.classList.add('hidden');
                     successCard.classList.remove('hidden');
                     
@@ -86,6 +331,7 @@
                     throw new Error(data.error || "Server error occurred");
                 }
             } catch (error) {
+                // Switch to Error State
                 loadingCard.classList.add('hidden');
                 errorCard.classList.remove('hidden');
                 document.getElementById('errorText').innerText = error.message;
