@@ -24,7 +24,6 @@ def handle_download():
         return jsonify({"error": "No URL provided"}), 400
 
     try:
-        # We are leaving out the cookie file for now to get the app working first
         opts = {
             "format": "bestaudio/best",
             "outtmpl": str(DOWNLOADS_DIR / "%(title)s.%(ext)s"),
@@ -32,6 +31,10 @@ def handle_download():
             "quiet": True,
             "no_warnings": True,
             "ffmpeg_location": FFMPEG_PATH,
+            # 1. Add cookies back in (ensure cookies.txt exists in the root)
+            "cookiefile": "cookies.txt",
+            # 2. Force a specific YouTube client to bypass player errors
+            "extractor_args": {"youtube": {"player_client": ["web", "tv"]}},
             "postprocessors": [{
                 "key": "FFmpegExtractAudio",
                 "preferredcodec": "mp3",
