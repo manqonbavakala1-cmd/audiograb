@@ -1,6 +1,6 @@
 flask
 flask-limiter
-yt-dlp --upgrade
+yt-dlp
 mutagen
 requests
 gunicorn
