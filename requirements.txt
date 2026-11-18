@@ -1,4 +1,5 @@
 flask
+flask-limiter
 yt-dlp --upgrade
 mutagen
 requests
